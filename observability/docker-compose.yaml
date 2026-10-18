@@ -1,0 +1,24 @@
+# Prometheus + Grafana for the Modal vLLM endpoint.
+# Based on vllm-project/vllm examples/observability/prometheus_grafana @ 79e205e.
+# Run from this directory: docker compose up -d
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000" # host 3000 is taken on the Pi
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana.json:/var/lib/grafana/dashboards/vllm.json:ro
+
+volumes:
+  prometheus-data:

@@ -1,0 +1,52 @@
+# llm-slo-bench ramp against vLLM on Modal (week 3: make the dashboard move).
+# Not a capacity test: rates stay low so dropped_rate stays at 0.
+version: 1
+
+target:
+  base_url: https://MODAL_HOST/v1 # replace with the host printed by `modal serve`
+  model: qwen3-8b
+  # The Modal app is unauthenticated, but non-loopback targets need a key env.
+  # Any non-empty value works: SLO_BENCH_KEY=unused.
+  api_key_env: SLO_BENCH_KEY
+
+request:
+  # /no_think: no reasoning parser is enabled, so thinking text would arrive as
+  # content and delay the answer. Qwen3 still emits an empty <think></think>
+  # first, so semantic TTFT is the first generated token.
+  prompt: Explain KV caching in three sentences. /no_think
+  max_completion_tokens: 128
+  timeout: 60s
+  stream_idle_timeout: 10s
+
+load:
+  # vLLM runs with --max-num-seqs 16; stay well under it.
+  max_in_flight: 8
+  stages:
+    - duration: 2m
+      target_rps: 0.5
+    - duration: 2m
+      target_rps: 1
+    - duration: 2m
+      target_rps: 2
+
+slo:
+  # Sanity gates only, not real SLOs yet.
+  p99_ttft_ms: 2000
+  max_error_rate: 0.01
+
+safety:
+  max_requests: 500
+  max_duration: 7m
+  max_cost_usd: 1
+  # Must be positive; pricing is zero, so this only caps admitted requests (1000).
+  reserve_cost_per_request_usd: 0.001
+
+pricing:
+  # Self-hosted: cost is GPU time, not tokens.
+  input_usd_per_million_tokens: 0
+  output_usd_per_million_tokens: 0
+
+output:
+  json: ""
+  html: ""
+  raw_jsonl: ""
