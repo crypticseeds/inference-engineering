@@ -69,7 +69,12 @@ export PROMETHEUS_CONFIG="$(./render-prometheus.sh <vllm-host> <sglang-host>)"
 docker compose up -d
 ```
 
-Wait for `vllm` and `sglang` to report **UP** in [Prometheus Targets](http://127.0.0.1:9090/targets), then open [vLLM vs SGLang live](http://127.0.0.1:3001/d/engines-live). Each panel plots both engines on the same axes: server p95 TTFT, request and token throughput, server p95 end-to-end and inter-token latency, running and queued requests, and KV cache usage.
+Wait for `vllm` and `sglang` to report **UP** in [Prometheus Targets](http://127.0.0.1:9090/targets), then open [vLLM vs SGLang live](http://127.0.0.1:3001/d/engines-live). Each panel plots both engines on the same axes:
+
+- **Batch state:** running and queued requests.
+- **Latency:** server mean and p95 TTFT, mean queue time, p95 end-to-end and inter-token latency. Use the mean TTFT for small values: vLLM's TTFT histogram has no bucket between 0.1 and 0.25 s, so its p95 reads about 0.25 s at low load.
+- **Throughput:** completed requests, output tokens and prompt tokens per second.
+- **Memory:** KV cache usage, and preempted requests (vLLM preemptions, SGLang retractions).
 
 These are server-side metrics. Client-side latency, offered load and request outcomes come from the GuideLLM reports, because GuideLLM does not export live metrics. Five-second scrapes can miss brief scheduler changes.
 

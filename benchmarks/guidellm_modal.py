@@ -55,8 +55,11 @@ PLANS = {
             for streams in (10, 250)
         ],
     },
+    # 16 CPUs so the client is less likely than the engine to limit throughput
+    # at 1,000 concurrent streams.
     "h100-concurrency": {
         "request_timeout": 120,
+        "cpu": 16,
         "stages": [("warmup", "kind=synchronous", ["kind=max_requests,count=3"])]
         + [
             (f"c{streams}", f"kind=concurrent,streams={streams},warmup=5", ["kind=max_duration,seconds=60"])
@@ -132,5 +135,7 @@ def wait_until_healthy(target: str) -> None:
 def main(plan: str, target: str, stem: str):
     if plan not in PLANS:
         raise SystemExit(f"--plan must be one of {sorted(PLANS)}")
-    for path in run_plan.remote(plan, target.rstrip("/"), stem):
+    cpu = PLANS[plan].get("cpu", 8)
+    runner = run_plan.with_options(cpu=cpu, memory=cpu * 2048)
+    for path in runner.remote(plan, target.rstrip("/"), stem):
         print("wrote", path)
