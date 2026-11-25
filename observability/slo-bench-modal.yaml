@@ -1,4 +1,4 @@
-# llm-slo-bench ramp against vLLM on Modal (week 3: make the dashboard move).
+# llm-slo-bench ramp against vLLM on Modal: low-rate load to exercise the dashboard.
 # Not a capacity test: rates stay low so dropped_rate stays at 0.
 version: 1
 
