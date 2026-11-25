@@ -21,11 +21,13 @@ GET  /metrics            # Prometheus metrics, scraped by observability/
 | Model revision | `b968826d9c46dd6066d109eabc6255188de91218` | Pinned so upstream model changes cannot alter results |
 | vLLM | `0.21.0` | Pinned; matches Modal's official vLLM example at the time of writing |
 | Base image | `nvidia/cuda:12.9.0-devel-ubuntu22.04`, Python 3.12 | CUDA userspace for the vLLM wheel |
-| GPU | A10, 24 GB | Low-cost Modal GPU that holds the BF16 weights (about 16 GB) |
+| GPU profile | `GPU_PROFILE=A10` (default) or `H100` | Selects the GPU and the engine limits below |
+| Precision | BF16 (`--dtype bfloat16`) | Qwen3-8B's native precision; weights take about 16 GB |
 | Maximum model length | 8,192 tokens | Leaves GPU memory for KV cache and runtime overhead |
-| Maximum sequences | 16 | Conservative batch limit for a single A10 |
+| Maximum sequences | A10: 16, H100: 256 | A10 keeps the conservative limit of the November 2026 sweeps; H100 admits more running requests for the concurrency sweep |
+| CUDA graphs | A10: off (`--enforce-eager`), H100: on | A10 keeps eager mode for faster startup, lower memory pressure and comparability with earlier runs, so its results are eager-mode measurements. H100 uses CUDA graphs, as in production |
 | GPU memory utilization | 90% | Reserves most GPU memory while keeping headroom |
-| Eager execution | Enabled (`--enforce-eager`) | Faster startup and lower memory pressure; CUDA graphs are disabled, so measurements from this configuration are eager-mode measurements |
+| Prefix caching | On, with cached tokens reported in `usage.prompt_tokens_details` | Matches the SGLang launcher, where prefix caching is the default |
 | Maximum containers | 1 | Prevents accidental scale-out |
 | Minimum containers | 0 | No warm container is billed while idle |
 | Idle scale-down | 120 seconds | Stops idle GPU billing quickly |
@@ -39,7 +41,7 @@ Before the first run:
 1. Open Modal **Settings -> Usage & Billing** and set a workspace usage budget.
 2. Confirm the remaining credits and the budget in the dashboard.
 
-At runtime the app is capped at one A10 and scales to zero after 120 idle seconds. Anything that sends requests keeps it awake, including the Prometheus scrape in [`observability/`](../../observability/README.md) (every 5 s). Stop the scraper when you stop the app.
+At runtime the app is capped at one GPU container and scales to zero after 120 idle seconds. Anything that sends requests keeps it awake, including the Prometheus scrape in [`observability/`](../../observability/README.md) (every 5 s). Stop the scraper when you stop the app.
 
 ## Prerequisites
 
@@ -62,13 +64,13 @@ The model is public, so no Hugging Face token is needed.
 modal run deploy/modal/vllm_qwen3_8b.py
 ```
 
-This starts a temporary app, then the local entrypoint:
+This starts vLLM inside one GPU container and checks it over loopback:
 
-1. Polls `/health` until it returns 200, retrying `503` while the server starts.
+1. Polls `/health` until it returns 200, and fails early if vLLM exits.
 2. Calls `/v1/models` and asserts `qwen3-8b` is served.
-3. Sends one chat request (`max_tokens: 96`, `temperature: 0`, thinking disabled via `chat_template_kwargs`) and asserts a non-empty assistant reply.
+3. Sends one streaming chat request (`max_tokens: 64`, `temperature: 0`, thinking disabled via `chat_template_kwargs`) and asserts a non-empty reply that ends with `data: [DONE]`.
 
-The command exits non-zero if any check fails. Modal stops the app when the command finishes; the weight and compile caches remain in the Volumes.
+The [SGLang launcher](./sglang_qwen3_8b.py) has the same layout and runs the same checks. Prefix `GPU_PROFILE=H100` to either command to check the H100 profile. The command exits non-zero if any check fails. Modal stops the app when the command finishes; the weight and compile caches remain in the Volumes.
 
 The first run is slow: it builds the CUDA and vLLM image, downloads about 16 GB of weights, then loads the model and initializes the KV cache. Later runs reuse the image layers and Volumes.
 
@@ -128,4 +130,4 @@ Read the streamed Modal logs above the error. Common causes are image build fail
 
 ### HTTP 503
 
-The server is still starting or has scaled to zero. The `modal run` entrypoint retries `503` until the startup deadline; for `modal serve`, wait and retry.
+The server is still starting or has scaled to zero. Under `modal serve`, wait and retry.
