@@ -48,3 +48,4 @@ Press Ctrl-C in both serving terminals when finished. The live benchmark is pend
 
 - [2026-10-18 Modal A10 dashboard validation](./2026-10-18-modal-a10-qwen3-8b/README.md) compares server-side and client-side latency.
 - [2026-11-23 Modal A10 GuideLLM results](./2026-11-23-modal-a10-guidellm/README.md) records the sequential baseline and the 1 and 2 req/s stages.
+- [2026-11-25 Modal A10 live comparison](./2026-11-25-modal-a10-live/README.md) repeats the six-rate sweep on vLLM and SGLang at once, from a Modal client, with a live Grafana dashboard.
