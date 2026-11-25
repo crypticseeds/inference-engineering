@@ -46,6 +46,15 @@ PLANS = {
             for rate in (1, 2, 4, 8, 16, 32)
         ],
     },
+    # Short check of the H100 profile and client before the full sweep.
+    "h100-dry": {
+        "request_timeout": 120,
+        "stages": [("warmup", "kind=synchronous", ["kind=max_requests,count=3"])]
+        + [
+            (f"c{streams}", f"kind=concurrent,streams={streams},warmup=5", ["kind=max_duration,seconds=30"])
+            for streams in (10, 250)
+        ],
+    },
     "h100-concurrency": {
         "request_timeout": 120,
         "stages": [("warmup", "kind=synchronous", ["kind=max_requests,count=3"])]
