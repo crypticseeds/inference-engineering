@@ -79,6 +79,8 @@ class Server:
             "--max-num-seqs",
             "16",
             "--enforce-eager",
+            "--enable-prefix-caching",
+            "--enable-prompt-tokens-details",
         ]
         print("Starting:", " ".join(command), flush=True)
         self.process = subprocess.Popen(command)
