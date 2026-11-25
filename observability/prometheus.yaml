@@ -2,18 +2,20 @@ global:
   scrape_interval: 5s
   evaluation_interval: 30s
 
+# Template only. render-prometheus.sh fills in the hosts printed by
+# `modal serve` and writes the result outside the repo, so live hostnames are
+# never committed. Both apps are unauthenticated, so no credentials are needed.
+# Every scrape counts as traffic and keeps the GPU awake: run
+# `docker compose down` when the session ends.
 scrape_configs:
-  # vLLM on Modal (deploy/modal/vllm_qwen3_8b.py). The app is unauthenticated,
-  # so no credentials are needed. Every scrape counts as traffic and keeps the
-  # A10 awake: run `docker compose down` when the session ends.
-  - job_name: vllm
+  - job_name: vllm # deploy/modal/vllm_qwen3_8b.py
     scheme: https
     metrics_path: /metrics
     static_configs:
-      - targets: ["MODAL_HOST:443"] # replace with the host printed by `modal serve`
+      - targets: ["VLLM_HOST:443"]
 
-  - job_name: sglang
+  - job_name: sglang # deploy/modal/sglang_qwen3_8b.py
     scheme: https
     metrics_path: /metrics
     static_configs:
-      - targets: [] # SGLang target goes in a private copy of this config.
+      - targets: ["SGLANG_HOST:443"]

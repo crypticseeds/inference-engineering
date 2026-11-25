@@ -14,10 +14,11 @@ Based on vLLM's [prometheus_grafana example](https://github.com/vllm-project/vll
 | File | Purpose |
 |---|---|
 | `docker-compose.yaml` | Prometheus + Grafana |
-| `prometheus.yaml` | Scrape job for the Modal host (replace `MODAL_HOST`) |
+| `prometheus.yaml` | Scrape template for vLLM and SGLang (`VLLM_HOST`, `SGLANG_HOST` placeholders) |
+| `render-prometheus.sh` | Fills in live hosts and writes a private config outside the repo |
 | `grafana/provisioning/` | Datasource and dashboard provider |
-| `grafana.json` | vLLM server dashboard |
-| `sglang-grafana.json` | SGLang server dashboard backed by live Prometheus scrapes |
+| `grafana.json` | Detailed vLLM server dashboard |
+| `engines-grafana.json` | vLLM and SGLang side by side on the same axes |
 | `trickle.sh` | Light curl load so panels move. Not a benchmark |
 | `slo-bench-modal.yaml` | [llm-slo-bench](https://github.com/crypticseeds/llm-slo-bench) `ramp` config, 0.5 -> 1 -> 2 req/s |
 
@@ -28,11 +29,13 @@ Based on vLLM's [prometheus_grafana example](https://github.com/vllm-project/vll
 modal serve deploy/modal/vllm_qwen3_8b.py      # note the printed https://... host
 
 # 2. Point Prometheus and the ramp config at it
-sed -i 's/MODAL_HOST/<host>/' observability/prometheus.yaml observability/slo-bench-modal.yaml
+cd observability
+export PROMETHEUS_CONFIG="$(./render-prometheus.sh <host> -)"
+sed -i 's/MODAL_HOST/<host>/' slo-bench-modal.yaml
 curl -s https://<host>/metrics | grep -E '^vllm:(num_requests_running|kv_cache_usage_perc)'
 
 # 3. Stack up, check the target is UP at http://localhost:9090/targets, dashboard at http://localhost:3001
-cd observability && docker compose up -d
+docker compose up -d
 
 # 4. Load, writing results to a dated run directory
 OUT=../benchmarks/$(date +%F)-modal-a10-qwen3-8b
@@ -43,40 +46,34 @@ SLO_BENCH_KEY=unused ~/REPOS/llm-slo-bench/bin/llm-slo-bench ramp --config slo-b
 
 # 5. Shut down: Ctrl-C modal serve, then
 docker compose down
-cd .. && git checkout -- observability/prometheus.yaml observability/slo-bench-modal.yaml  # never commit the real host
+git checkout -- slo-bench-modal.yaml  # never commit the real host
 ```
 
 Results from the 2026-10-18 run are in [`benchmarks/2026-10-18-modal-a10-qwen3-8b/`](../benchmarks/2026-10-18-modal-a10-qwen3-8b/README.md). Before committing a new run, replace the real host with `MODAL_HOST` in any file that embeds it (the HTML report does).
 
 Prometheus scrapes every 5 s, which counts as traffic and keeps the A10 from scaling to zero. Always run `docker compose down` when finished.
 
-## SGLang live smoke test
+## Live engine comparison
 
-From the repo root, run `modal serve deploy/modal/sglang_qwen3_8b.py` in a separate terminal. Wait until `/health` returns HTTP 200. The launcher enables `/metrics`.
-
-From `observability/`, enter the private hostname printed by Modal without `https://` or a trailing slash. This creates a scrape config outside the repo and disables the unused vLLM placeholder. If the current config already has a working vLLM target, the substitution preserves it.
+Start both engines from the repo root, each in its own terminal, and note the two printed hosts. Add `GPU_PROFILE=H100` in front of both commands for the H100 profile.
 
 ```bash
-read -r SGLANG_MODAL_HOST
-export PROMETHEUS_CONFIG="$(mktemp -d "${TMPDIR:-/tmp}/sglang-prometheus.XXXXXX")/prometheus.yaml"
-(
-  umask 022
-  sed -e 's/\["MODAL_HOST:443"\]/[]/' \
-      -e "s|targets: \[\] # SGLang target.*|targets: [\"${SGLANG_MODAL_HOST}:443\"]|" \
-      prometheus.yaml > "$PROMETHEUS_CONFIG"
-)
+modal serve deploy/modal/vllm_qwen3_8b.py
+modal serve deploy/modal/sglang_qwen3_8b.py
+```
+
+From `observability/`, render a private scrape config for both hosts and start the stack:
+
+```bash
+export PROMETHEUS_CONFIG="$(./render-prometheus.sh <vllm-host> <sglang-host>)"
 docker compose up -d
 ```
 
-Wait for `sglang` to report **UP** in [Prometheus Targets](http://127.0.0.1:9090/targets), then open [SGLang Live Metrics](http://127.0.0.1:3001/d/sglang-live). Use the normal local Grafana login.
+Wait for `vllm` and `sglang` to report **UP** in [Prometheus Targets](http://127.0.0.1:9090/targets), then open [vLLM vs SGLang live](http://127.0.0.1:3001/d/engines-live). Each panel plots both engines on the same axes: server p95 TTFT, request and token throughput, server p95 end-to-end and inter-token latency, running and queued requests, and KV cache usage.
 
-```bash
-BASE_URL="https://${SGLANG_MODAL_HOST}" bash ./trickle.sh 2 30
-```
+These are server-side metrics. Client-side latency, offered load and request outcomes come from the GuideLLM reports, because GuideLLM does not export live metrics. Five-second scrapes can miss brief scheduler changes.
 
-Check for HTTP 200 responses, positive request or token throughput, and latency samples. The queue can stay at zero under light traffic, and five-second scrapes can miss brief scheduler changes. These panels show server telemetry. GuideLLM supplies client-side latency, offered load, and request outcomes.
-
-Stop `modal serve` with Ctrl-C once the smoke check is complete. The Prometheus volume retains the captured interval for screenshots.
+Stop both `modal serve` sessions and run `docker compose down` when finished. The Prometheus volume keeps the captured interval for screenshots after the engines stop.
 
 ## vLLM panel definitions
 
