@@ -1,8 +1,8 @@
 # Deployment
 
-Deployment configuration for the same inference service across environments.
+Deployment runbooks for the same vLLM service across environments.
 
-- `runpod/`: initial rented-GPU environment
-- `modal/`: serverless development and temporary endpoint testing
-- `docker/`: reproducible container deployment
-- `kubernetes/`: production-stack deployment and queue-depth autoscaling
+- [`modal/`](./modal/README.md): serverless A10, used for the published benchmark runs
+- [`runpod/`](./runpod/README.md): GPU pods, with vLLM installed via pip or run from the official `vllm/vllm-openai` image
+- `docker/` (planned): pinned container deployment
+- `kubernetes/` (planned): Kubernetes deployment with queue-depth autoscaling

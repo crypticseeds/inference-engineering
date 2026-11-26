@@ -1,0 +1,89 @@
+{
+  "uid": "sglang-live",
+  "title": "SGLang Live Metrics",
+  "description": "Server telemetry scraped from SGLang /metrics by Prometheus every 5 seconds.",
+  "tags": ["sglang", "prometheus"],
+  "schemaVersion": 41,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Running requests",
+      "description": "Requests currently running in the engine.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "decimals": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(sglang:num_running_reqs{job=\"sglang\"})", "legendFormat": "Running" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Queued requests",
+      "description": "Requests waiting for admission to the running batch.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "decimals": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(sglang:num_queue_reqs{job=\"sglang\"})", "legendFormat": "Waiting" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Server p95 time to first token",
+      "description": "Server-side p95 estimated from a rolling one-minute histogram.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{job=\"sglang\"}[1m])))", "legendFormat": "Server p95 TTFT" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Output token throughput",
+      "description": "Generated tokens per second over a rolling one-minute window.",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "suffix: tokens/s", "min": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(sglang:generation_tokens_total{job=\"sglang\"}[1m]))", "legendFormat": "Output tokens/s" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Request throughput",
+      "description": "Server-observed request completions per second over a rolling one-minute window.",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "suffix: req/s", "min": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(sglang:e2e_request_latency_seconds_count{job=\"sglang\"}[1m]))", "legendFormat": "Request completions" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Server p95 request latency",
+      "description": "Server-side end-to-end p95 estimated from a rolling one-minute histogram.",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0, "custom": { "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(sglang:e2e_request_latency_seconds_bucket{job=\"sglang\"}[1m])))", "legendFormat": "Server p95 request latency" }
+      ]
+    }
+  ]
+}

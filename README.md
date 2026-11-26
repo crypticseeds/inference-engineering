@@ -1,73 +1,86 @@
 # Inference Engineering
 
-An implementation repository for learning how to operate and optimize one reproducible Large Language Model (LLM) inference service.
+A reproducible LLM serving stack: vLLM serving `Qwen/Qwen3-8B` behind an OpenAI-compatible API on rented GPUs, with Prometheus and Grafana for server-side metrics and client-side load testing to check them. Every result in this repository records the engine version, model revision, hardware and launch flags it was measured with.
 
-The work follows the [Time to First Token roadmap](https://github.com/crypticseeds/time-to-first-token), a personal learning fork of the original [patchy631/time-to-first-token](https://github.com/patchy631/time-to-first-token) roadmap created by [patchy631](https://github.com/patchy631). The roadmap repository holds the curriculum, progress tracker, and revision notes. This repository holds the service, deployment configuration, observability, benchmarks, optimization variants, and final benchmark writeup.
+## Architecture
 
-## Goal
+```text
+            OpenAI-compatible requests                 scrape every 5 s
+ client  -------------------------------->  Modal A10  <-----------------  Prometheus  ---->  Grafana
+ (curl,     /v1/chat/completions            vLLM 0.21.0      /metrics       (Docker          (dashboard,
+  llm-slo-bench)                            Qwen3-8B BF16                    Compose)          port 3001)
+```
 
-Build one OpenAI-compatible inference service and improve it in place:
+- **Serving:** vLLM on one Modal A10, defined in [`deploy/modal/vllm_qwen3_8b.py`](./deploy/modal/vllm_qwen3_8b.py). The same container exposes the OpenAI API under `/v1` and Prometheus metrics at `/metrics`.
+- **Metrics:** Prometheus scrapes `/metrics` over HTTPS; Grafana renders a dashboard adapted from vLLM's upstream example, with three panels corrected. See [`observability/`](./observability/README.md).
+- **Load:** [`observability/trickle.sh`](./observability/trickle.sh) for closed-loop curl traffic and [llm-slo-bench](https://github.com/crypticseeds/llm-slo-bench) for open-loop rate ramps with client-side HDR histograms.
 
-- Serve a model with vLLM on rented Graphics Processing Unit (GPU) hardware
-- Compare vLLM with SGLang using the same model and workload
-- Measure Time to First Token (TTFT), Time Per Output Token (TPOT), throughput, queue depth, and cost
-- Benchmark quantization, speculative decoding, and Key-Value (KV) cache strategies
-- Deploy the service on Kubernetes and autoscale from queue depth
-- Add cost-aware routing and per-request token budgets
-- Publish exact commands, pinned versions, and reproducible results
+## Verified platforms
 
-## Current Direction
+| Platform | How | Runbook |
+|---|---|---|
+| Modal | Serverless A10 (24 GB), vLLM 0.21.0, scale to zero after 120 s idle | [`deploy/modal/`](./deploy/modal/README.md) |
+| Modal | Serverless A10 (24 GB), SGLang 0.5.9, dev endpoint checked from Bruno, Prometheus metrics enabled | [SGLang runbook](./variants/sglang/README.md) |
+| RunPod | pip: vLLM installed with `uv` on a GPU pod, then `vllm serve` | [`deploy/runpod/`](./deploy/runpod/README.md#method-a-pip-on-a-pod) |
+| RunPod | Image: official `vllm/vllm-openai` image as the pod container | [`deploy/runpod/`](./deploy/runpod/README.md#method-b-vllmvllm-openai-as-the-pod-image) |
 
-- **Primary engine:** vLLM
-- **Candidate baseline model:** `Qwen/Qwen3-8B`
-- **Current smoke-test environment:** Modal with one A10 GPU
-- **Planned persistent environment:** RunPod with a 24-gigabyte GPU
-- **Initial context target:** 8,192 tokens
+## Results
 
-These choices are provisional until the first deployment is validated. Record the exact engine version, model revision, GPU, launch command, and context length with every result.
+Qwen3-8B BF16 on one Modal A10, vLLM 0.21.0 with `--enforce-eager`, low load (up to 2 req/s). Full setup, method and raw data: [`benchmarks/2026-10-18-modal-a10-qwen3-8b/`](./benchmarks/2026-10-18-modal-a10-qwen3-8b/README.md).
 
-## Repository Structure
+| Result | Value | What it shows |
+|---|---|---|
+| TTFT, server vs client (mean) | 94.5 ms (vLLM `/metrics`) vs 195 ms (llm-slo-bench) | About half of user-facing TTFT is network and proxy time that server metrics cannot see |
+| Inter-token latency (mean) | 36.6 ms | About 73% of the A10 memory-bandwidth limit (16 GB of weights / 600 GB/s = 27 ms per token) |
+| Queue time on an idle server | Dashboard p99 297 ms vs real mean 7.8 µs | Quantiles from vLLM's 0.3 s minimum bucket are interpolation artifacts; the panel now shows the mean |
+| Dashboard panels fixed | 3 | Queue Time and Prefill/Decode Time divided by request count; Request Throughput replaces a panel with no definition |
+
+## Repository layout
 
 ```text
 inference-engineering/
-├── service/          # API-facing service code and shared runtime configuration
 ├── deploy/
-│   ├── runpod/       # RunPod setup and launch instructions
-│   ├── modal/        # Serverless development and smoke testing
-│   ├── docker/       # Container-based deployment
-│   └── kubernetes/   # Helm, manifests, and autoscaling configuration
-├── observability/    # Prometheus, Grafana, dashboards, and metric definitions
-├── benchmarks/       # Workloads, sweep scripts, raw results, and reports
+│   ├── modal/        # Modal app and runbook (A10, vLLM 0.21.0, Qwen3-8B)
+│   ├── runpod/       # RunPod runbook, troubleshooting, and the original step-by-step guides in reference/
+│   ├── docker/       # (planned) pinned container deployment
+│   └── kubernetes/   # (planned) Kubernetes deployment with queue-depth autoscaling
+├── observability/    # Prometheus + Grafana compose stack, dashboard, panel definitions, load scripts
+├── benchmarks/       # One directory per run: setup, method, results, raw client and server data
 ├── variants/
-│   ├── sglang/       # SGLang deployment using the baseline model
-│   ├── fp8/          # FP8 configuration and measurements
-│   └── awq/          # Activation-aware Weight Quantization configuration and measurements
-├── router/           # Cost, latency, and quality routing with token budgets
-└── old/              # Archived experiments retained for reference
+│   ├── sglang/       # Verified SGLang deployment and API runbook
+│   ├── fp8/          # (planned) FP8 quantization
+│   └── awq/          # (planned) AWQ quantization
+├── service/          # (planned) shared service code outside the serving engine, such as request middleware
+└── router/           # (planned) cost- and latency-aware routing
 ```
 
-Directories are populated only when their roadmap stage begins. Avoid adding disconnected demos: each change should extend or measure the same service.
+Directories marked (planned) hold only a README describing their scope; see [Planned](#planned).
 
-## Working Rules
+## Measurement conventions
 
-1. Keep the model, workload, and hardware fixed when comparing engines or configurations.
-2. Pin versions and save exact launch commands before recording results.
-3. Record exact input and output token lengths.
-4. Report p50, p95, and p99 latency, keeping TTFT separate from TPOT.
-5. Sweep request rate or concurrency rather than reporting one arbitrary load point.
+1. Keep model, workload and hardware fixed when comparing engines or configurations.
+2. Pin versions and save the exact launch command with every result.
+3. Record input and output token lengths.
+4. Report p50, p95 and p99, and keep TTFT separate from per-token decode latency.
+5. Prefer client HDR histograms for tail latency; server-side `histogram_quantile` values are bucket-limited.
 6. Do not publish measurements taken while the server is preempting requests.
-7. Keep credentials out of the repository. Runtime secrets must be injected through the environment.
+7. Keep credentials and endpoint hostnames out of the repository; use placeholders such as `MODAL_HOST`.
 
-## Roadmap Relationship
+## Planned
 
-- **Learning plan and progress:** [crypticseeds/time-to-first-token](https://github.com/crypticseeds/time-to-first-token)
-- **Implementation and benchmark:** this repository
-- **Benchmark workspace:** [`benchmarks/`](./benchmarks/README.md)
-- **Final result:** the roadmap will link back to the published benchmark in this repository
+- Shared-prefix TTFT comparison between SGLang and vLLM on the same model, hardware and workload.
+- FP8 and AWQ quantization, with a quality check alongside memory and latency.
+- Kubernetes deployment with autoscaling on request queue depth rather than CPU.
+- Cost- and latency-aware routing across deployments.
 
-## Status
+## Roadmap
 
-The repository is being reorganized around the 10-week roadmap. Earlier standalone vLLM pip and Docker notes are preserved in [`old/`](./old/README.md) and are not the current source of truth.
+This work follows the [Time to First Token roadmap](https://github.com/crypticseeds/time-to-first-token), a personal learning fork of the original [patchy631/time-to-first-token](https://github.com/patchy631/time-to-first-token) roadmap created by [patchy631](https://github.com/patchy631). The roadmap repository holds the curriculum, progress tracker and revision notes. This repository holds the service, deployment configuration, observability and benchmarks.
+
+## Related tools
+
+- [sre-inference-gateway](https://github.com/crypticseeds/sre-inference-gateway): multi-provider inference gateway with SRE patterns; its measurement runs (including `2026-10-18-vllm-modal`) are in [`docs/measurements`](https://github.com/crypticseeds/sre-inference-gateway/tree/main/docs/measurements).
+- [llm-slo-bench](https://github.com/crypticseeds/llm-slo-bench): Go load generator and SLO gate for OpenAI-compatible streaming endpoints, used for the ramp results here.
 
 ## License
 
