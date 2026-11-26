@@ -54,6 +54,10 @@ SGLang's sampled running count reached 134 during the 100-concurrent stage, abov
 
 Neither engine preempted or retracted a request at any stage, and KV cache usage peaked at 5.8% on vLLM and 4.9% on SGLang. With 88-token requests, memory was never the limit.
 
+The 500 and 1,000 concurrent stages, zoomed in. vLLM's batch sits at 256 with up to 244 queued, while its mean queue time stays near 0.1 s and mean server TTFT climbs to 2.5 s. SGLang never queues, yet its server TTFT reaches 4.8 s.
+
+![vLLM and SGLang at 500 and 1,000 concurrent](grafana-h100-500-1000.png)
+
 ## What limited each engine
 
 vLLM filled its 256-request batch from 500 concurrent and queued up to 244 more in its scheduler. Its throughput stopped growing there, at 327 req/s, and fell slightly at 1,000.

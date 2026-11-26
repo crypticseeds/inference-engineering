@@ -42,6 +42,10 @@ The dashboard shows what the client cannot. Peaks below come from the 5-second P
 - Queued requests were zero on both engines through 8 req/s and zero on vLLM at 16 req/s. At 32 req/s the queue peaked at 46 requests on vLLM and 60 on SGLang.
 - KV cache usage peaked at 4.6% on vLLM and 5.1% on SGLang, because each request holds only 88 tokens. The run was limited by the running-request cap, not by memory.
 
+The 16 and 32 req/s stages, zoomed in on the later 12-panel version of the dashboard. At 32 req/s both batches are full at 16, and mean queue time rises to about 2.1 s on vLLM and 2.7 s on SGLang, most of their server-side TTFT. On the A10, unlike the [H100 run](../2026-11-25-modal-h100-concurrency/README.md), the scheduler queue explains the latency.
+
+![vLLM and SGLang at 16 and 32 req/s](grafana-a10-16-32rps.png)
+
 Mean server-side TTFT, computed from the histogram sum and count over a rolling minute, stayed between 45 and 112 ms for vLLM through 16 req/s and between 54 and 101 ms for SGLang through 8 req/s. SGLang's mean rose to about 0.45 s at 16 req/s. At 32 req/s the means reached about 2.3 s on vLLM and 3.0 s on SGLang. The dashboard's p95 TTFT panel shows vLLM near 0.25 s at low load because vLLM's histogram has no bucket between 0.1 and 0.25 s, so `histogram_quantile` interpolates inside that gap. The means are the reliable server-side figure here.
 
 ## Comparison with November 24
