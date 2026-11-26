@@ -17,7 +17,7 @@ The final serving logs show shutdown and exit code 0. The cause of the earlier i
 
 ## Try the API from Bruno or Postman
 
-The [Modal app](../../deploy/modal/sglang_qwen3_8b.py) has two modes, like the [vLLM app](../../deploy/modal/README.md#deploy-and-verify). `modal run` runs an automated check and closes the app. `modal serve` gives you an HTTPS URL and keeps it available while the command is running.
+The [Modal app](../../deploy/modal/sglang_qwen3_8b.py) has two modes, like the [vLLM app](../../deploy/modal/README.md#deploy-and-verify). `modal run` runs an automated check and closes the app. `modal serve` gives you an HTTPS URL and keeps it available while the command is running. Both launchers default to the A10 profile; prefix either command with `GPU_PROFILE=H100` for the H100 profile.
 
 From the repository root, run this in a terminal and leave it open.
 
