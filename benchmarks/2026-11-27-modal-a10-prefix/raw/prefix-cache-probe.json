@@ -1,0 +1,35 @@
+{
+  "model": "qwen3-8b",
+  "vllm": {
+    "miss_p50_ms": 752.3915,
+    "hit_p50_ms": 264.192,
+    "pairs": [
+      {"miss": {"ttft_ms": 850.484, "prompt_tokens": 2361, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 266.67, "prompt_tokens": 2361, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 749.901, "prompt_tokens": 2359, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 262.515, "prompt_tokens": 2359, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 752.074, "prompt_tokens": 2358, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 262.53, "prompt_tokens": 2358, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 750.572, "prompt_tokens": 2363, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 262.494, "prompt_tokens": 2363, "completion_tokens": 17, "cached_tokens": 2352}},
+      {"miss": {"ttft_ms": 752.642, "prompt_tokens": 2363, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 263.857, "prompt_tokens": 2363, "completion_tokens": 17, "cached_tokens": 2352}},
+      {"miss": {"ttft_ms": 751.019, "prompt_tokens": 2358, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 264.603, "prompt_tokens": 2358, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 752.141, "prompt_tokens": 2360, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 264.235, "prompt_tokens": 2360, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 754.568, "prompt_tokens": 2360, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 265.136, "prompt_tokens": 2360, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 758.124, "prompt_tokens": 2362, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 264.909, "prompt_tokens": 2362, "completion_tokens": 17, "cached_tokens": 2336}},
+      {"miss": {"ttft_ms": 754.622, "prompt_tokens": 2362, "completion_tokens": 7, "cached_tokens": 0}, "hit": {"ttft_ms": 264.149, "prompt_tokens": 2362, "completion_tokens": 17, "cached_tokens": 2336}}
+    ]
+  },
+  "sglang": {
+    "miss_p50_ms": 839.686,
+    "hit_p50_ms": 347.788,
+    "pairs": [
+      {"miss": {"ttft_ms": 1215.854, "prompt_tokens": 2361, "completion_tokens": 7, "cached_tokens": 3}, "hit": {"ttft_ms": 358.911, "prompt_tokens": 2361, "completion_tokens": 17, "cached_tokens": 2350}},
+      {"miss": {"ttft_ms": 839.753, "prompt_tokens": 2359, "completion_tokens": 7, "cached_tokens": 4}, "hit": {"ttft_ms": 356.428, "prompt_tokens": 2359, "completion_tokens": 17, "cached_tokens": 2348}},
+      {"miss": {"ttft_ms": 838.485, "prompt_tokens": 2358, "completion_tokens": 7, "cached_tokens": 4}, "hit": {"ttft_ms": 348.846, "prompt_tokens": 2358, "completion_tokens": 17, "cached_tokens": 2347}},
+      {"miss": {"ttft_ms": 878.62, "prompt_tokens": 2363, "completion_tokens": 7, "cached_tokens": 5}, "hit": {"ttft_ms": 346.832, "prompt_tokens": 2363, "completion_tokens": 17, "cached_tokens": 2352}},
+      {"miss": {"ttft_ms": 837.068, "prompt_tokens": 2363, "completion_tokens": 7, "cached_tokens": 5}, "hit": {"ttft_ms": 346.019, "prompt_tokens": 2363, "completion_tokens": 17, "cached_tokens": 2352}},
+      {"miss": {"ttft_ms": 839.148, "prompt_tokens": 2358, "completion_tokens": 7, "cached_tokens": 4}, "hit": {"ttft_ms": 344.583, "prompt_tokens": 2358, "completion_tokens": 17, "cached_tokens": 2347}},
+      {"miss": {"ttft_ms": 840.102, "prompt_tokens": 2360, "completion_tokens": 7, "cached_tokens": 5}, "hit": {"ttft_ms": 347.591, "prompt_tokens": 2360, "completion_tokens": 17, "cached_tokens": 2349}},
+      {"miss": {"ttft_ms": 839.619, "prompt_tokens": 2360, "completion_tokens": 7, "cached_tokens": 5}, "hit": {"ttft_ms": 347.997, "prompt_tokens": 2360, "completion_tokens": 17, "cached_tokens": 2349}},
+      {"miss": {"ttft_ms": 839.594, "prompt_tokens": 2362, "completion_tokens": 7, "cached_tokens": 6}, "hit": {"ttft_ms": 347.985, "prompt_tokens": 2362, "completion_tokens": 17, "cached_tokens": 2351}},
+      {"miss": {"ttft_ms": 841.263, "prompt_tokens": 2362, "completion_tokens": 7, "cached_tokens": 6}, "hit": {"ttft_ms": 347.547, "prompt_tokens": 2362, "completion_tokens": 17, "cached_tokens": 2351}}
+    ]
+  }
+}

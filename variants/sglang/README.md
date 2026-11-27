@@ -1,6 +1,6 @@
 # SGLang
 
-SGLang deployment verified on Modal on 2026-11-22. The shared-prefix comparison with vLLM is pending.
+SGLang deployment verified on Modal on 2026-11-22. The [shared-prefix comparison with vLLM](../../benchmarks/2026-11-27-modal-a10-prefix/README.md) ran on 2026-11-27.
 
 ## Verified deployment
 

@@ -3,7 +3,6 @@
 import argparse
 import http.client
 import json
-import os
 import statistics
 import sys
 import time
@@ -106,14 +105,12 @@ def main():
     parser.add_argument("--vllm", required=True, help="vLLM HTTPS base URL")
     parser.add_argument("--sglang", required=True, help="SGLang HTTPS base URL")
     args = parser.parse_args()
-    token = os.getenv("MODAL_PROXY_BEARER")
-    sglang_headers = {"Authorization": f"Bearer {token}"} if token else {}
     prefixes = [f"Catalog {uuid.uuid4().hex}\n{CONTEXT}" for _ in range(PAIRS)]
     try:
         print("Measuring vLLM…", file=sys.stderr)
         vllm = compare(args.vllm, prefixes, {})
         print("Measuring SGLang…", file=sys.stderr)
-        sglang = compare(args.sglang, prefixes, sglang_headers)
+        sglang = compare(args.sglang, prefixes, {})
     except (OSError, RuntimeError, ValueError, http.client.HTTPException) as error:
         parser.exit(1, f"Benchmark stopped: {error}\n")
     print(json.dumps({"model": MODEL, "vllm": vllm, "sglang": sglang}, indent=2))
