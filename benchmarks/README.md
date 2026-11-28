@@ -2,47 +2,35 @@
 
 Reproducible workloads, raw outputs, and summarized results, one directory per run.
 
-Every result must identify the model revision, engine version, hardware, input and output token lengths, sampling settings, concurrency or request rate, and whether requests were preempted.
+Every result must identify the model revision, engine version, hardware, input and output token lengths, sampling settings, concurrency or request rate, and whether requests were preempted. Check a run against the [pre-publish checklist](pre-publish-checklist.md) before quoting it elsewhere.
 
 ## Week 4: prefix cache comparison
 
-Use vLLM 0.21.0's `vllm bench serve` as the benchmark client for both engines. Its `prefix_repetition` dataset exercises the shared OpenAI-compatible `/v1/completions` endpoint. Run 100 requests per condition, one at a time. Compare 100 distinct prefixes to 5 repeated prefixes, keeping the requested prefix, suffix, and output lengths fixed. [Benchmark CLI reference](https://docs.vllm.ai/en/v0.21.0/benchmarking/cli/)
+[`prefix_modal.py`](prefix_modal.py) runs two clients from a Modal CPU container in us-east, next to the GPUs. Both send raw prompts with 2,048-token prefixes, 64-token suffixes and 32 output tokens to `/v1/completions`, at temperature 0 with `ignore_eos`.
 
-From the repository root, run `modal serve deploy/modal/vllm_qwen3_8b.py` and `modal serve deploy/modal/sglang_qwen3_8b.py` in separate terminals. Both dev endpoints allow unauthenticated requests. Run the following from the repository root, replacing the placeholders with the HTTPS base URLs printed by Modal.
+| Client | Stage | Workload |
+|---|---|---|
+| vLLM 0.21.0 `vllm bench serve`, `prefix_repetition` | `unique-c1` | 100 distinct prefixes, one request at a time |
+| | `repeated-c1` | 5 prefixes reused 20 times each, one at a time |
+| | `unique-2rps` | 120 distinct prefixes at 2 req/s, up to 32 in flight |
+| | `repeated-2rps` | 6 prefixes reused 20 times each at 2 req/s |
+| SGLang 0.5.9 `sglang.bench_serving`, `generated-shared-prefix` (cross-check) | `gsp-unique-c1` | 100 groups of 1, one at a time |
+| | `gsp-repeated-c1` | 5 groups of 20, one at a time |
 
-```bash
-VLLM_BASE_URL='<VLLM_BASE_URL>'
-SGLANG_BASE_URL='<SGLANG_BASE_URL>'
+Every stage has its own seed, so no stage reuses another's prefixes. Both datasets shuffle requests, so the repeated stages include the first, uncached use of each prefix. Both tools also send a warm-up request from their own prompts, which can prime one prefix. [vLLM benchmark CLI](https://docs.vllm.ai/en/v0.21.0/benchmarking/cli/) · [SGLang 0.5.9 benchmark source](https://github.com/sgl-project/sglang/blob/v0.5.9/python/sglang/bench_serving.py)
 
-bench_prefix() {
-  vllm bench serve \
-    --backend openai --endpoint /v1/completions --base-url "$1" \
-    --model Qwen/Qwen3-8B --served-model-name qwen3-8b \
-    --dataset-name prefix_repetition --num-prompts 100 \
-    --prefix-repetition-prefix-len 2048 --prefix-repetition-suffix-len 64 \
-    --prefix-repetition-output-len 32 --prefix-repetition-num-prefixes "$2" \
-    --seed "$3" --max-concurrency 1 --temperature 0 --ignore-eos \
-    --ready-check-timeout-sec 900 --metric-percentiles 50,95,99 \
-    --save-result --save-detailed --result-filename "$4"
-}
-
-OPENAI_API_KEY= bench_prefix "$VLLM_BASE_URL" 100 42 vllm-unique.json
-OPENAI_API_KEY= bench_prefix "$VLLM_BASE_URL" 5 43 vllm-repeated.json
-OPENAI_API_KEY= bench_prefix "$SGLANG_BASE_URL" 100 42 sglang-unique.json
-OPENAI_API_KEY= bench_prefix "$SGLANG_BASE_URL" 5 43 sglang-repeated.json
-```
-
-Check that all 100 requests completed per run. Report p50, p95, and p99 client TTFT, the recorded token lengths, and any failed requests. Use the same seeds across engines and different seeds across conditions. The tool sends a readiness request using the first prompt, which can warm one prefix. The repeated-prefix condition also includes the first use of each unprimed prefix. Report both conditions as workloads with different levels of reuse.
-
-The paired chat probe is available to check whether both engines actually report reused tokens. Run it before the benchmark to keep its prompts separate from the measured workload.
+Start both engines with `modal serve` in separate terminals, then run one client per engine:
 
 ```bash
-python3 benchmarks/prefix_cache.py --vllm "$VLLM_BASE_URL" --sglang "$SGLANG_BASE_URL"
+modal run benchmarks/prefix_modal.py --engine vllm --target https://<vllm-host> --stem <stem>
+modal run benchmarks/prefix_modal.py --engine sglang --target https://<sglang-host> --stem <stem>
 ```
 
-SGLang 0.5.9 also ships `python3 -m sglang.bench_serving` with a `generated-shared-prefix` dataset. Its `sglang-oai` and `vllm` backends both use the same `/v1/completions` request handler. For a second-tool cross-check, use that client against both engines and report the workload and results together. [SGLang 0.5.9 benchmark source](https://github.com/sgl-project/sglang/blob/v0.5.9/python/sglang/bench_serving.py)
+Before the benchmark, check that both engines report reused prompt tokens. The probe uses its own prompts, so it does not prime the measured prefixes.
 
-Press Ctrl-C in both serving terminals when finished. The live benchmark is pending.
+```bash
+python3 benchmarks/prefix_cache.py --vllm https://<vllm-host> --sglang https://<sglang-host>
+```
 
 ## Runs
 
@@ -50,3 +38,4 @@ Press Ctrl-C in both serving terminals when finished. The live benchmark is pend
 - [2026-11-23 Modal A10 GuideLLM results](./2026-11-23-modal-a10-guidellm/README.md) records the sequential baseline and the 1 and 2 req/s stages.
 - [2026-11-25 Modal A10 live comparison](./2026-11-25-modal-a10-live/README.md) repeats the six-rate sweep on vLLM and SGLang at once, from a Modal client, with a live Grafana dashboard.
 - [2026-11-25 Modal H100 concurrency sweep](./2026-11-25-modal-h100-concurrency/README.md) pushes both engines from 1 to 1,000 concurrent requests with CUDA graphs and a 256-request batch.
+- [2026-11-27 Modal A10 shared-prefix comparison](./2026-11-27-modal-a10-prefix/README.md) measures TTFT for distinct vs reused 2,048-token prefixes on both engines, one at a time and at 2 req/s.
