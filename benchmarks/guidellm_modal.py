@@ -66,6 +66,15 @@ PLANS = {
             for streams in (1, 10, 50, 100, 250, 500, 1000)
         ],
     },
+    # Week 6: the same stages up to 250 concurrent, once per quantized variant.
+    "quant-concurrency": {
+        "request_timeout": 120,
+        "stages": [("warmup", "kind=synchronous", ["kind=max_requests,count=3"])]
+        + [
+            (f"c{streams}", f"kind=concurrent,streams={streams},warmup=5", ["kind=max_duration,seconds=60"])
+            for streams in (1, 10, 50, 100, 250)
+        ],
+    },
 }
 
 image = modal.Image.debian_slim(python_version="3.12").uv_pip_install(f"guidellm=={GUIDELLM_VERSION}")

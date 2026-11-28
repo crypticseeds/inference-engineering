@@ -1,10 +1,12 @@
 """vLLM serving Qwen3-8B on one Modal GPU.
 
-GPU_PROFILE selects the GPU and engine limits (default A10):
+GPU_PROFILE selects the GPU and engine limits (default A10). MODEL_VARIANT
+selects the checkpoint (default bf16); every variant is served as qwen3-8b.
 
     modal run deploy/modal/vllm_qwen3_8b.py                      # smoke test
     modal serve deploy/modal/vllm_qwen3_8b.py                    # dev endpoint
     GPU_PROFILE=H100 modal serve deploy/modal/vllm_qwen3_8b.py   # H100 profile
+    GPU_PROFILE=L40S MODEL_VARIANT=awq modal serve deploy/modal/vllm_qwen3_8b.py
 
 The endpoint is unauthenticated. Never `modal deploy` this file.
 """
@@ -18,8 +20,17 @@ import urllib.request
 
 import modal
 
-MODEL_NAME = "Qwen/Qwen3-8B"
-MODEL_REVISION = "b968826d9c46dd6066d109eabc6255188de91218"
+# Qwen's own checkpoints. fp8 is block-wise FP8 weights and activations; awq is
+# 4-bit AWQ weights with 16-bit activations.
+VARIANTS = {
+    "bf16": ("Qwen/Qwen3-8B", "b968826d9c46dd6066d109eabc6255188de91218"),
+    "fp8": ("Qwen/Qwen3-8B-FP8", "220b46e3b2180893580a4454f21f22d3ebb187d3"),
+    "awq": ("Qwen/Qwen3-8B-AWQ", "4da05a8edb55c6046cce958586c33b61da07bb79"),
+}
+MODEL_VARIANT = os.environ.get("MODEL_VARIANT", "bf16")
+if MODEL_VARIANT not in VARIANTS:
+    raise ValueError(f"MODEL_VARIANT must be one of {sorted(VARIANTS)}, got {MODEL_VARIANT!r}")
+MODEL_NAME, MODEL_REVISION = VARIANTS[MODEL_VARIANT]
 SERVED_MODEL_NAME = "qwen3-8b"
 CONTEXT_LENGTH = 8192
 PORT = 8000
@@ -28,10 +39,12 @@ STARTUP_TIMEOUT_SECONDS = 15 * 60
 VLLM_VERSION = "0.21.0"
 
 # A10 keeps the eager, 16-request configuration of the November 2026 sweeps.
-# H100 enables CUDA graphs and admits up to 256 running requests.
+# H100 and L40S enable CUDA graphs and admit up to 256 running requests.
+# L40S (Ada) is the cheapest profile with native FP8 compute, used for Week 6.
 PROFILES = {
     "A10": {"max_running_requests": 16, "cuda_graphs": False},
     "H100": {"max_running_requests": 256, "cuda_graphs": True},
+    "L40S": {"max_running_requests": 256, "cuda_graphs": True},
 }
 GPU_PROFILE = os.environ.get("GPU_PROFILE", "A10")
 if GPU_PROFILE not in PROFILES:
@@ -45,6 +58,7 @@ image = (
     .env(
         {
             "GPU_PROFILE": GPU_PROFILE,
+            "MODEL_VARIANT": MODEL_VARIANT,
             "HF_XET_HIGH_PERFORMANCE": "1",
             "VLLM_LOG_STATS_INTERVAL": "1",
         }
@@ -58,7 +72,10 @@ volumes = {
         "inference-engineering-vllm-cache", create_if_missing=True
     ),
 }
-app = modal.App("inference-engineering-qwen3-8b")
+# One app per variant, so the variants can be served side by side.
+app = modal.App(
+    "inference-engineering-qwen3-8b" + ("" if MODEL_VARIANT == "bf16" else f"-{MODEL_VARIANT}")
+)
 
 
 def start_server(host: str) -> subprocess.Popen:
@@ -103,10 +120,19 @@ def stop_server(server: subprocess.Popen) -> None:
     volumes=volumes,
     port=PORT,
     unauthenticated=True,
+    # Keep the GPU in the benchmark clients' region. Modal does not allow
+    # pinning the cloud here, so the startup log records which one it chose.
+    compute_region="us-east",
 )
 class Server:
     @modal.enter()
     def start(self):
+        print(
+            "GPU placement:",
+            os.environ.get("MODAL_CLOUD_PROVIDER", "unknown"),
+            os.environ.get("MODAL_REGION", "unknown"),
+            flush=True,
+        )
         self.process = start_server("0.0.0.0")
 
     @modal.exit()

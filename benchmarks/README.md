@@ -39,3 +39,4 @@ python3 benchmarks/prefix_cache.py --vllm https://<vllm-host> --sglang https://<
 - [2026-11-25 Modal A10 live comparison](./2026-11-25-modal-a10-live/README.md) repeats the six-rate sweep on vLLM and SGLang at once, from a Modal client, with a live Grafana dashboard.
 - [2026-11-25 Modal H100 concurrency sweep](./2026-11-25-modal-h100-concurrency/README.md) pushes both engines from 1 to 1,000 concurrent requests with CUDA graphs and a 256-request batch.
 - [2026-11-27 Modal A10 shared-prefix comparison](./2026-11-27-modal-a10-prefix/README.md) measures TTFT for distinct vs reused 2,048-token prefixes on both engines, one at a time and at 2 req/s.
+- [2026-11-28 Modal L40S quantization](./2026-11-28-modal-l40s-quantization/README.md) compares Qwen3-8B BF16, FP8 and AWQ INT4 on GSM8K, WikiText perplexity, memory and a 1 to 250 concurrency sweep.

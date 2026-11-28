@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 30s
+
+# Template only, for the Week 6 quantization variants (quant-grafana.json).
+# render-prometheus-quant.sh fills in the hosts printed by `modal serve` and
+# writes the result outside the repo, so live hostnames are never committed.
+# The variant label splits every dashboard panel by checkpoint. Every scrape
+# keeps the GPUs awake: run `docker compose down` when the session ends.
+scrape_configs:
+  - job_name: vllm # deploy/modal/vllm_qwen3_8b.py with MODEL_VARIANT
+    scheme: https
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["BF16_HOST:443"]
+        labels:
+          variant: bf16
+      - targets: ["FP8_HOST:443"]
+        labels:
+          variant: fp8
+      - targets: ["AWQ_HOST:443"]
+        labels:
+          variant: awq
