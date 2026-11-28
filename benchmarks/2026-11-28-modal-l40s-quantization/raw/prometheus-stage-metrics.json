@@ -1,0 +1,152 @@
+{
+ "bf16:1": {
+  "server_ttft_mean_ms": 33.9804779399525,
+  "queue_mean_ms": 0.012991901515437294,
+  "itl_mean_ms": 21.66112960654902,
+  "req_per_s": 2.64,
+  "running_max": 1.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.05617977528089568,
+  "preemptions": 0.0
+ },
+ "bf16:10": {
+  "server_ttft_mean_ms": 79.43464825125098,
+  "queue_mean_ms": 0.015448699997686489,
+  "itl_mean_ms": 23.717318780080213,
+  "req_per_s": 21.8,
+  "running_max": 10.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.5617977528089901,
+  "preemptions": 0.0
+ },
+ "bf16:50": {
+  "server_ttft_mean_ms": 147.93122636015434,
+  "queue_mean_ms": 0.03856691677095285,
+  "itl_mean_ms": 30.733745299809033,
+  "req_per_s": 78.1,
+  "running_max": 50.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 2.397003745318349,
+  "preemptions": 0.0
+ },
+ "bf16:100": {
+  "server_ttft_mean_ms": 274.7190252909642,
+  "queue_mean_ms": 8.233195179966668,
+  "itl_mean_ms": 41.834769885794465,
+  "req_per_s": 105.02000000000001,
+  "running_max": 100.0,
+  "waiting_max": 25.0,
+  "kv_max_pct": 4.990636704119855,
+  "preemptions": 0.0
+ },
+ "bf16:250": {
+  "server_ttft_mean_ms": 570.0833962533429,
+  "queue_mean_ms": 133.32997738523807,
+  "itl_mean_ms": 83.13351559710482,
+  "req_per_s": 130.62,
+  "running_max": 250.0,
+  "waiting_max": 84.0,
+  "kv_max_pct": 13.089887640449438,
+  "preemptions": 0.0
+ },
+ "fp8:1": {
+  "server_ttft_mean_ms": 24.441593809972833,
+  "queue_mean_ms": 0.014166512658626928,
+  "itl_mean_ms": 18.708224400421987,
+  "req_per_s": 3.16,
+  "running_max": 1.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.04403992953611047,
+  "preemptions": 0.0
+ },
+ "fp8:10": {
+  "server_ttft_mean_ms": 76.95860618617347,
+  "queue_mean_ms": 0.021839642320441607,
+  "itl_mean_ms": 16.692622198452383,
+  "req_per_s": 29.300000000000004,
+  "running_max": 10.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.4403992953611269,
+  "preemptions": 0.0
+ },
+ "fp8:50": {
+  "server_ttft_mean_ms": 89.64393497149209,
+  "queue_mean_ms": 0.0257319214782308,
+  "itl_mean_ms": 23.29764361852638,
+  "req_per_s": 108.76,
+  "running_max": 50.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 2.0405167351732256,
+  "preemptions": 0.0
+ },
+ "fp8:100": {
+  "server_ttft_mean_ms": 270.97860880410957,
+  "queue_mean_ms": 23.859880211573028,
+  "itl_mean_ms": 31.44705777513601,
+  "req_per_s": 128.24,
+  "running_max": 100.0,
+  "waiting_max": 16.0,
+  "kv_max_pct": 4.029653552554313,
+  "preemptions": 0.0
+ },
+ "fp8:250": {
+  "server_ttft_mean_ms": 401.9360152359037,
+  "queue_mean_ms": 74.49980748925104,
+  "itl_mean_ms": 74.53770984006289,
+  "req_per_s": 160.04000000000002,
+  "running_max": 250.0,
+  "waiting_max": 26.0,
+  "kv_max_pct": 9.62272460364063,
+  "preemptions": 0.0
+ },
+ "awq:1": {
+  "server_ttft_mean_ms": 19.34513541211854,
+  "queue_mean_ms": 0.013794418367423173,
+  "itl_mean_ms": 8.204254178328064,
+  "req_per_s": 5.880000000000001,
+  "running_max": 1.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.0399946673776852,
+  "preemptions": 0.0
+ },
+ "awq:10": {
+  "server_ttft_mean_ms": 47.78086232438413,
+  "queue_mean_ms": 0.01288555930673224,
+  "itl_mean_ms": 9.314090879863928,
+  "req_per_s": 46.2,
+  "running_max": 10.0,
+  "waiting_max": 0.0,
+  "kv_max_pct": 0.3599520063991446,
+  "preemptions": 0.0
+ },
+ "awq:50": {
+  "server_ttft_mean_ms": 165.28907435208262,
+  "queue_mean_ms": 1.2703650698170597,
+  "itl_mean_ms": 15.702928912904385,
+  "req_per_s": 111.72000000000001,
+  "running_max": 50.0,
+  "waiting_max": 8.0,
+  "kv_max_pct": 1.799760031995734,
+  "preemptions": 0.0
+ },
+ "awq:100": {
+  "server_ttft_mean_ms": 361.18925775891245,
+  "queue_mean_ms": 38.49968820767734,
+  "itl_mean_ms": 26.8677094401406,
+  "req_per_s": 120.86,
+  "running_max": 72.0,
+  "waiting_max": 15.0,
+  "kv_max_pct": 2.3730169310758553,
+  "preemptions": 0.0
+ },
+ "awq:250": {
+  "server_ttft_mean_ms": 804.4791705755434,
+  "queue_mean_ms": 283.80616631268583,
+  "itl_mean_ms": 61.9080492252375,
+  "req_per_s": 132.72,
+  "running_max": 250.0,
+  "waiting_max": 127.0,
+  "kv_max_pct": 8.938808158912149,
+  "preemptions": 0.0
+ }
+}

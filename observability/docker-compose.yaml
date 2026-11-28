@@ -20,6 +20,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana.json:/var/lib/grafana/dashboards/vllm.json:ro
       - ./engines-grafana.json:/var/lib/grafana/dashboards/engines.json:ro
+      - ./quant-grafana.json:/var/lib/grafana/dashboards/quant.json:ro
 
 volumes:
   prometheus-data:

@@ -19,6 +19,7 @@ Based on vLLM's [prometheus_grafana example](https://github.com/vllm-project/vll
 | `grafana/provisioning/` | Datasource and dashboard provider |
 | `grafana.json` | Detailed vLLM server dashboard |
 | `engines-grafana.json` | vLLM and SGLang side by side on the same axes |
+| `prometheus-quant.yaml`, `render-prometheus-quant.sh`, `quant-grafana.json` | Week 6: three vLLM quantization variants, one line per `variant` label |
 | `trickle.sh` | Light curl load so panels move. Not a benchmark |
 | `slo-bench-modal.yaml` | [llm-slo-bench](https://github.com/crypticseeds/llm-slo-bench) `ramp` config, 0.5 -> 1 -> 2 req/s |
 
@@ -79,6 +80,25 @@ Wait for `vllm` and `sglang` to report **UP** in [Prometheus Targets](http://127
 These are server-side metrics. Client-side latency, offered load and request outcomes come from the GuideLLM reports, because GuideLLM does not export live metrics. Five-second scrapes can miss brief scheduler changes.
 
 Stop both `modal serve` sessions and run `docker compose down` when finished. The Prometheus volume keeps the captured interval for screenshots after the engines stop.
+
+## Live quantization comparison
+
+Serve the three Week 6 variants on L40S GPUs, each in its own terminal, and note the printed hosts:
+
+```bash
+GPU_PROFILE=L40S MODEL_VARIANT=bf16 modal serve deploy/modal/vllm_qwen3_8b.py
+GPU_PROFILE=L40S MODEL_VARIANT=fp8 modal serve deploy/modal/vllm_qwen3_8b.py
+GPU_PROFILE=L40S MODEL_VARIANT=awq modal serve deploy/modal/vllm_qwen3_8b.py
+```
+
+From `observability/`:
+
+```bash
+export PROMETHEUS_CONFIG="$(./render-prometheus-quant.sh <bf16-host> <fp8-host> <awq-host>)"
+docker compose up -d
+```
+
+Open [vLLM quantization variants live](http://127.0.0.1:3001/d/quant-live). It has the same 12 panels as the engine comparison, with vLLM queries split by the `variant` label: BF16 blue, FP8 orange, AWQ green.
 
 ## vLLM panel definitions
 
